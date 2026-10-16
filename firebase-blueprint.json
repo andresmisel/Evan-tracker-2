@@ -91,11 +91,11 @@
     },
     "MedicalRecord": {
       "title": "MedicalRecord",
-      "description": "Pediatric appointments and vaccines.",
+      "description": "Pediatric appointments, vaccines, medications and growth measurements.",
       "type": "object",
       "properties": {
         "familyId": { "type": "string", "maxLength": 128 },
-        "type": { "type": "string", "enum": ["appointment", "vaccine"] },
+        "type": { "type": "string", "enum": ["appointment", "vaccine", "medication", "growth"] },
         "title": { "type": "string", "maxLength": 150 },
         "providerOrDoctor": { "type": "string", "maxLength": 100 },
         "date": { "type": "string", "maxLength": 30 },
@@ -103,12 +103,16 @@
         "status": { "type": "string", "enum": ["pending", "completed", "cancelled"] },
         "weightKg": { "type": "number" },
         "heightCm": { "type": "number" },
-        "notes": { "type": "string", "maxLength": 500 },
+        "headCircumferenceCm": { "type": "number" },
         "doseNumber": { "type": "string", "maxLength": 30 },
+        "everyHours": { "type": "number" },
+        "frequency": { "type": "string", "maxLength": 100 },
+        "treatmentGroupId": { "type": "string", "maxLength": 100 },
+        "notes": { "type": "string", "maxLength": 500 },
         "loggedByUid": { "type": "string", "maxLength": 128 },
         "createdAt": { "type": "string" }
       },
-      "required": ["familyId", "type", "title", "date", "status", "loggedByUid"]
+      "required": ["familyId", "type", "title", "date", "status"]
     },
     "UserProfile": {
       "title": "UserProfile",

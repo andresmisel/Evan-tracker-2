@@ -20,6 +20,9 @@ import {
   Bell,
   Pill,
   Calendar,
+  Cloud,
+  CloudOff,
+  CheckCircle2,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -42,7 +45,7 @@ import {
   setLocal,
   generateSeedActivities,
 } from './lib/storage';
-import { auth, onAuthStateChanged, testConnection } from './lib/firebase';
+import { auth, googleProvider, signInWithPopup, onAuthStateChanged, testConnection, User } from './lib/firebase';
 import { Header } from './components/Header';
 import { AlertBanner } from './components/AlertBanner';
 import { QuickActions } from './components/QuickActions';
@@ -95,8 +98,12 @@ export default function App() {
     return getLocal<{ startTime: string } | null>('active_sleep', null);
   });
 
+  // Current authenticated user (Google Auth)
+  const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
+  const [syncToast, setSyncToast] = useState<string | null>(null);
+
   // Cloud connection state
-  const [isCloudConnected, setIsCloudConnected] = useState<boolean>(true);
+  const [isCloudConnected, setIsCloudConnected] = useState<boolean>(!!auth.currentUser);
 
   // Initialize DataService
   const dataService = useMemo(() => new DataService(family.id), [family.id]);
@@ -148,18 +155,30 @@ export default function App() {
     setMedical(cachedMedical);
 
     // Subscribe to real-time streams
+    dataService.subscribeFamily(setFamily);
     dataService.subscribeFeedings(setFeedings);
     dataService.subscribeDiapers(setDiapers);
     dataService.subscribeSleeps(setSleeps);
     dataService.subscribeInventory(setInventory);
     dataService.subscribeMedical(setMedical);
 
-    // Auth listener
-    const unsubAuth = onAuthStateChanged(auth, () => {
-      setIsCloudConnected(true);
+    // Auth listener with auto cloud sync
+    const unsubAuth = onAuthStateChanged(auth, async (user) => {
+      setCurrentUser(user);
+      setIsCloudConnected(!!user);
+      if (user) {
+        // Automatically sync and push any local changes to Firestore
+        const res = await dataService.syncLocalToCloud(family);
+        if (res.success && res.syncedCount > 0) {
+          setSyncToast(`¡Nube sincronizada! ${res.syncedCount} registros respaldados en vivo.`);
+          setTimeout(() => setSyncToast(null), 4000);
+        }
+      }
     });
 
-    testConnection().then((ok) => setIsCloudConnected(ok));
+    testConnection().then((ok) => {
+      if (ok && auth.currentUser) setIsCloudConnected(true);
+    });
 
     return () => {
       dataService.unsubscribeAll();
@@ -335,9 +354,31 @@ export default function App() {
     setMedical(updated);
   };
 
-  const handleUpdateFamily = (updated: FamilyProfile) => {
-    setFamily(updated);
-    setLocal('family_profile', updated);
+  const handleUpdateFamily = async (updated: FamilyProfile) => {
+    const saved = await dataService.saveFamily(updated);
+    setFamily(saved);
+  };
+
+  const handleQuickGoogleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+      const res = await dataService.syncLocalToCloud(family);
+      if (res.success) {
+        setSyncToast(`¡Conectado! Se respaldaron ${res.syncedCount} registros en la nube.`);
+        setTimeout(() => setSyncToast(null), 5000);
+      }
+    } catch (err) {
+      console.error('Google login error:', err);
+    }
+  };
+
+  const handleManualSync = async () => {
+    const res = await dataService.syncLocalToCloud(family);
+    if (res.success) {
+      setSyncToast(`¡Sincronización exitosa! ${res.syncedCount} registros respaldados.`);
+      setTimeout(() => setSyncToast(null), 4000);
+    }
+    return res;
   };
 
   // Today's stats calculation
@@ -369,7 +410,38 @@ export default function App() {
         currentCaregiver={currentCaregiver}
         setCurrentCaregiver={setCurrentCaregiver}
         isCloudConnected={isCloudConnected}
+        currentUser={currentUser}
+        onQuickGoogleLogin={handleQuickGoogleLogin}
       />
+
+      {/* Offline/Local-only awareness banner with 1-click Google connect */}
+      {!currentUser && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-3">
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-blue-500/10 to-indigo-500/15 border border-amber-500/35 dark:border-amber-400/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
+                <CloudOff size={18} />
+              </span>
+              <div>
+                <span className="font-bold text-slate-800 dark:text-slate-100">
+                  Modo Local (Solo en este dispositivo):
+                </span>{' '}
+                <span className="text-slate-600 dark:text-slate-300">
+                  Para guardar tus modificaciones y verlas en vivo desde tu celular, tablet o el dispositivo de tu pareja, vincula con Google.
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleQuickGoogleLogin}
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer transition-all shrink-0"
+            >
+              <Cloud size={14} />
+              <span>Conectar con Google</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Alert Banner for low stock or pediatric appointments */}
       <AlertBanner
@@ -894,7 +966,16 @@ export default function App() {
         currentCaregiver={currentCaregiver}
         setCurrentCaregiver={setCurrentCaregiver}
         isCloudConnected={isCloudConnected}
+        onSyncNow={handleManualSync}
       />
+
+      {/* Floating Sync Toast Notification */}
+      {syncToast && (
+        <div className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-50 p-3.5 rounded-2xl bg-emerald-600 text-white font-semibold text-xs shadow-2xl shadow-emerald-950/40 flex items-center gap-2 border border-emerald-400 animate-bounce">
+          <CheckCircle2 size={16} />
+          <span>{syncToast}</span>
+        </div>
+      )}
     </div>
   );
 }

@@ -404,6 +404,21 @@ export function setLocal<T>(key: string, value: T): void {
   }
 }
 
+// Clean any undefined properties before sending to Firestore
+export function cleanForFirestore<T extends Record<string, any>>(data: T): Record<string, any> {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined) {
+      if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+        result[key] = cleanForFirestore(value);
+      } else {
+        result[key] = value;
+      }
+    }
+  }
+  return result;
+}
+
 // Real-time Firestore sync & dispatch
 export class DataService {
   private familyId: string;
@@ -427,6 +442,132 @@ export class DataService {
       }
     });
     this.unsubscribers = [];
+  }
+
+  // Subscribe to Family Profile
+  subscribeFamily(callback: (family: FamilyProfile) => void) {
+    const docRef = doc(db, 'families', this.familyId);
+    const unsub = onSnapshot(
+      docRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data() as FamilyProfile;
+          setLocal('family_profile', data);
+          callback(data);
+        } else {
+          const cached = getLocal<FamilyProfile>('family_profile', INITIAL_FAMILY);
+          callback(cached);
+        }
+      },
+      (error) => {
+        console.warn('Firestore Family subscription fallback:', error.message);
+        const cached = getLocal<FamilyProfile>('family_profile', INITIAL_FAMILY);
+        callback(cached);
+      }
+    );
+    this.unsubscribers.push(unsub);
+  }
+
+  // Save Family Profile to Firestore and Local
+  async saveFamily(family: FamilyProfile) {
+    const currentMemberUids = family.memberUids || [];
+    const userUid = auth.currentUser?.uid;
+    const updatedMemberUids = userUid && !currentMemberUids.includes(userUid)
+      ? [...currentMemberUids, userUid]
+      : currentMemberUids;
+
+    const updatedFamily: FamilyProfile = {
+      ...family,
+      memberUids: updatedMemberUids,
+      updatedAt: new Date().toISOString(),
+    };
+
+    setLocal('family_profile', updatedFamily);
+
+    try {
+      if (auth.currentUser) {
+        await setDoc(doc(db, 'families', this.familyId), cleanForFirestore(updatedFamily), { merge: true });
+      }
+    } catch (err) {
+      console.warn('Cloud save family fallback to local:', err);
+    }
+    return updatedFamily;
+  }
+
+  // Sync all local records to Firestore when user connects
+  async syncLocalToCloud(currentFamily?: FamilyProfile): Promise<{ success: boolean; syncedCount: number }> {
+    if (!auth.currentUser) return { success: false, syncedCount: 0 };
+    let syncedCount = 0;
+    try {
+      const fam = currentFamily || getLocal<FamilyProfile>('family_profile', INITIAL_FAMILY);
+      const memberUids = Array.from(new Set([...(fam.memberUids || []), auth.currentUser.uid]));
+      const membersNames = {
+        ...(fam.membersNames || {}),
+        [auth.currentUser.uid]: auth.currentUser.displayName || auth.currentUser.email || 'Admin',
+      };
+      const updatedFam: FamilyProfile = {
+        ...fam,
+        memberUids,
+        membersNames,
+        updatedAt: new Date().toISOString(),
+      };
+      await setDoc(doc(db, 'families', this.familyId), cleanForFirestore(updatedFam), { merge: true });
+      setLocal('family_profile', updatedFam);
+      syncedCount++;
+
+      // Sync Feedings
+      const localFeedings = getLocal<FeedingRecord[]>(`feedings_${this.familyId}`, []);
+      for (const feed of localFeedings) {
+        await setDoc(doc(db, 'families', this.familyId, 'feedings', feed.id), cleanForFirestore({
+          ...feed,
+          loggedByUid: feed.loggedByUid || auth.currentUser.uid,
+        }), { merge: true });
+        syncedCount++;
+      }
+
+      // Sync Diapers
+      const localDiapers = getLocal<DiaperRecord[]>(`diapers_${this.familyId}`, []);
+      for (const diaper of localDiapers) {
+        await setDoc(doc(db, 'families', this.familyId, 'diapers', diaper.id), cleanForFirestore({
+          ...diaper,
+          loggedByUid: diaper.loggedByUid || auth.currentUser.uid,
+        }), { merge: true });
+        syncedCount++;
+      }
+
+      // Sync Sleeps
+      const localSleeps = getLocal<SleepRecord[]>(`sleeps_${this.familyId}`, []);
+      for (const sleep of localSleeps) {
+        await setDoc(doc(db, 'families', this.familyId, 'sleeps', sleep.id), cleanForFirestore({
+          ...sleep,
+          loggedByUid: sleep.loggedByUid || auth.currentUser.uid,
+        }), { merge: true });
+        syncedCount++;
+      }
+
+      // Sync Inventory
+      const localInventory = getLocal<InventoryItem[]>(`inventory_${this.familyId}`, INITIAL_INVENTORY);
+      for (const item of localInventory) {
+        await setDoc(doc(db, 'families', this.familyId, 'inventory', item.id), cleanForFirestore(item), { merge: true });
+        syncedCount++;
+      }
+
+      // Sync Medical
+      const localMedical = getLocal<MedicalRecord[]>(`medical_${this.familyId}`, INITIAL_VACCINES);
+      for (const med of localMedical) {
+        await setDoc(doc(db, 'families', this.familyId, 'medical', med.id), cleanForFirestore({
+          ...med,
+          loggedByUid: med.loggedByUid || auth.currentUser.uid,
+        }), { merge: true });
+        syncedCount++;
+      }
+
+      console.log(`Cloud sync completed! ${syncedCount} records synced to Firestore.`);
+      return { success: true, syncedCount };
+    } catch (err) {
+      console.error('Error during syncLocalToCloud:', err);
+      return { success: false, syncedCount };
+    }
   }
 
   // Subscribe to Feedings
@@ -580,12 +721,15 @@ export class DataService {
 
   // Save Feeding
   async saveFeeding(feeding: FeedingRecord, inventoryItems: InventoryItem[], autoDeduct: boolean = true) {
-    const path = `families/${this.familyId}/feedings/${feeding.id}`;
+    const enriched: FeedingRecord = {
+      ...feeding,
+      loggedByUid: feeding.loggedByUid || auth.currentUser?.uid || '',
+    };
     
     // Save to Firestore & local
     try {
       if (auth.currentUser) {
-        await setDoc(doc(db, 'families', this.familyId, 'feedings', feeding.id), feeding);
+        await setDoc(doc(db, 'families', this.familyId, 'feedings', enriched.id), cleanForFirestore(enriched), { merge: true });
       }
     } catch (err) {
       console.warn('Cloud save feeding fallback to local:', err);
@@ -593,14 +737,14 @@ export class DataService {
     
     // Update local cache
     const current = getLocal<FeedingRecord[]>(`feedings_${this.familyId}`, []);
-    const updatedFeedings = [feeding, ...current.filter(f => f.id !== feeding.id)];
+    const updatedFeedings = [enriched, ...current.filter(f => f.id !== enriched.id)];
     setLocal(`feedings_${this.familyId}`, updatedFeedings);
 
     // Auto-deduct formula if enabled and formula consumed
     let updatedInventoryList = inventoryItems;
-    if (autoDeduct && (feeding.type === 'formula' || feeding.type === 'mixed')) {
-      const formulaItem = feeding.deductedFormulaItemId
-        ? inventoryItems.find((i) => i.id === feeding.deductedFormulaItemId)
+    if (autoDeduct && (enriched.type === 'formula' || enriched.type === 'mixed')) {
+      const formulaItem = enriched.deductedFormulaItemId
+        ? inventoryItems.find((i) => i.id === enriched.deductedFormulaItemId)
         : inventoryItems.find(
             (i) => i.category === 'formula' && (i.autoDeductEnabled ?? true)
           );
@@ -614,23 +758,28 @@ export class DataService {
 
   // Save Diaper
   async saveDiaper(diaper: DiaperRecord, inventoryItems: InventoryItem[], autoDeduct: boolean = true) {
+    const enriched: DiaperRecord = {
+      ...diaper,
+      loggedByUid: diaper.loggedByUid || auth.currentUser?.uid || '',
+    };
+
     try {
       if (auth.currentUser) {
-        await setDoc(doc(db, 'families', this.familyId, 'diapers', diaper.id), diaper);
+        await setDoc(doc(db, 'families', this.familyId, 'diapers', enriched.id), cleanForFirestore(enriched), { merge: true });
       }
     } catch (err) {
       console.warn('Cloud save diaper fallback to local:', err);
     }
 
     const current = getLocal<DiaperRecord[]>(`diapers_${this.familyId}`, []);
-    const updatedDiapers = [diaper, ...current.filter(d => d.id !== diaper.id)];
+    const updatedDiapers = [enriched, ...current.filter(d => d.id !== enriched.id)];
     setLocal(`diapers_${this.familyId}`, updatedDiapers);
 
     // Auto-deduct 1 diaper from the specifically chosen item
     let updatedInventoryList = inventoryItems;
     if (autoDeduct) {
-      const diaperItem = diaper.deductedDiaperItemId
-        ? inventoryItems.find((i) => i.id === diaper.deductedDiaperItemId)
+      const diaperItem = enriched.deductedDiaperItemId
+        ? inventoryItems.find((i) => i.id === enriched.deductedDiaperItemId)
         : inventoryItems.find(
             (i) => i.category === 'diapers' && (i.autoDeductEnabled ?? true)
           );
@@ -644,7 +793,7 @@ export class DataService {
       const wipesItem = inventoryItems.find(
         (i) => i.category === 'wipes' && (i.autoDeductEnabled ?? true)
       );
-      if (wipesItem && (diaper.type === 'dirty' || diaper.type === 'mixed')) {
+      if (wipesItem && (enriched.type === 'dirty' || enriched.type === 'mixed')) {
         if (wipesItem.unit === 'paquetes') {
           const newQty = Math.max(0, wipesItem.currentQuantity - 0.03);
           updatedInventoryList = await this.updateInventoryQuantity(wipesItem.id, Number(newQty.toFixed(2)));
@@ -659,16 +808,21 @@ export class DataService {
 
   // Save Sleep
   async saveSleep(sleep: SleepRecord) {
+    const enriched: SleepRecord = {
+      ...sleep,
+      loggedByUid: sleep.loggedByUid || auth.currentUser?.uid || '',
+    };
+
     try {
       if (auth.currentUser) {
-        await setDoc(doc(db, 'families', this.familyId, 'sleeps', sleep.id), sleep);
+        await setDoc(doc(db, 'families', this.familyId, 'sleeps', enriched.id), cleanForFirestore(enriched), { merge: true });
       }
     } catch (err) {
       console.warn('Cloud save sleep fallback to local:', err);
     }
 
     const current = getLocal<SleepRecord[]>(`sleeps_${this.familyId}`, []);
-    const updated = [sleep, ...current.filter(s => s.id !== sleep.id)];
+    const updated = [enriched, ...current.filter(s => s.id !== enriched.id)];
     setLocal(`sleeps_${this.familyId}`, updated);
     return updated;
   }
@@ -677,7 +831,7 @@ export class DataService {
   async saveInventoryItem(item: InventoryItem) {
     try {
       if (auth.currentUser) {
-        await setDoc(doc(db, 'families', this.familyId, 'inventory', item.id), item);
+        await setDoc(doc(db, 'families', this.familyId, 'inventory', item.id), cleanForFirestore(item), { merge: true });
       }
     } catch (err) {
       console.warn('Cloud save inventory item fallback to local:', err);
@@ -706,7 +860,7 @@ export class DataService {
 
     try {
       if (auth.currentUser) {
-        await setDoc(doc(db, 'families', this.familyId, 'inventory', itemId), updatedItem);
+        await setDoc(doc(db, 'families', this.familyId, 'inventory', itemId), cleanForFirestore(updatedItem), { merge: true });
       }
     } catch (err) {
       console.warn('Cloud update quantity fallback to local:', err);
@@ -719,19 +873,24 @@ export class DataService {
 
   // Save Medical Record
   async saveMedicalRecord(record: MedicalRecord) {
+    const enriched: MedicalRecord = {
+      ...record,
+      loggedByUid: record.loggedByUid || auth.currentUser?.uid || '',
+    };
+
     try {
       if (auth.currentUser) {
-        await setDoc(doc(db, 'families', this.familyId, 'medical', record.id), record);
+        await setDoc(doc(db, 'families', this.familyId, 'medical', enriched.id), cleanForFirestore(enriched), { merge: true });
       }
     } catch (err) {
       console.warn('Cloud save medical fallback to local:', err);
     }
 
     const current = getLocal<MedicalRecord[]>(`medical_${this.familyId}`, INITIAL_VACCINES);
-    const index = current.findIndex(m => m.id === record.id);
+    const index = current.findIndex(m => m.id === enriched.id);
     const updated = index >= 0
-      ? current.map(m => m.id === record.id ? record : m)
-      : [...current, record];
+      ? current.map(m => m.id === enriched.id ? enriched : m)
+      : [...current, enriched];
     setLocal(`medical_${this.familyId}`, updated);
     return updated;
   }
@@ -741,7 +900,11 @@ export class DataService {
     try {
       if (auth.currentUser) {
         for (const record of newRecords) {
-          await setDoc(doc(db, 'families', this.familyId, 'medical', record.id), record);
+          const enriched = {
+            ...record,
+            loggedByUid: record.loggedByUid || auth.currentUser?.uid || '',
+          };
+          await setDoc(doc(db, 'families', this.familyId, 'medical', record.id), cleanForFirestore(enriched), { merge: true });
         }
       }
     } catch (err) {

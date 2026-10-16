@@ -12,6 +12,9 @@ import {
 import { FamilyProfile, SleepRecord } from '../types';
 import { SparkleGlow, StarSparkle } from './SparkleEffect';
 
+import { User } from 'firebase/auth';
+import { Cloud, CloudOff } from 'lucide-react';
+
 interface HeaderProps {
   family: FamilyProfile;
   darkMode: boolean;
@@ -22,6 +25,8 @@ interface HeaderProps {
   currentCaregiver: string;
   setCurrentCaregiver: (caregiver: string) => void;
   isCloudConnected: boolean;
+  currentUser?: User | null;
+  onQuickGoogleLogin?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -34,6 +39,8 @@ export const Header: React.FC<HeaderProps> = ({
   currentCaregiver,
   setCurrentCaregiver,
   isCloudConnected,
+  currentUser,
+  onQuickGoogleLogin,
 }) => {
   // Calculate baby age
   const calculateAge = () => {
@@ -143,19 +150,34 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             {/* Sync Status Button */}
-            <button
-              type="button"
-              onClick={onOpenSyncModal}
-              title="Sincronización en tiempo real"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/60 text-blue-700 dark:text-blue-300 text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all cursor-pointer"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <Users size={14} className="hidden sm:inline" />
-              <span className="hidden md:inline">Familia</span>
-            </button>
+            {currentUser ? (
+              <button
+                type="button"
+                onClick={onOpenSyncModal}
+                title={`Sincronizado en la nube como ${currentUser.displayName || currentUser.email}`}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-all cursor-pointer shadow-sm"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <Cloud size={14} className="text-emerald-600 dark:text-emerald-400" />
+                <span className="hidden sm:inline">En la Nube</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onQuickGoogleLogin || onOpenSyncModal}
+                title="Sincronizar cambios en múltiples dispositivos"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 border border-amber-400/40 text-amber-800 dark:text-amber-300 text-xs font-bold hover:bg-amber-500/20 transition-all cursor-pointer shadow-sm animate-pulse"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                </span>
+                <CloudOff size={14} className="text-amber-600 dark:text-amber-400" />
+                <span className="font-semibold">Sincronizar</span>
+              </button>
+            )}
 
             {/* Dark Mode Toggle */}
             <button
