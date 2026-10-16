@@ -2,6 +2,8 @@ import {
   collection,
   doc,
   setDoc,
+  getDoc,
+  getDocs,
   deleteDoc,
   onSnapshot,
   query,
@@ -470,104 +472,160 @@ export class DataService {
 
   // Save Family Profile to Firestore and Local
   async saveFamily(family: FamilyProfile) {
-    const currentMemberUids = family.memberUids || [];
-    const userUid = auth.currentUser?.uid;
-    const updatedMemberUids = userUid && !currentMemberUids.includes(userUid)
-      ? [...currentMemberUids, userUid]
-      : currentMemberUids;
-
     const updatedFamily: FamilyProfile = {
       ...family,
-      memberUids: updatedMemberUids,
       updatedAt: new Date().toISOString(),
     };
 
     setLocal('family_profile', updatedFamily);
 
     try {
-      if (auth.currentUser) {
-        await setDoc(doc(db, 'families', this.familyId), cleanForFirestore(updatedFamily), { merge: true });
-      }
+      await setDoc(doc(db, 'families', this.familyId), cleanForFirestore(updatedFamily), { merge: true });
     } catch (err) {
       console.warn('Cloud save family fallback to local:', err);
     }
     return updatedFamily;
   }
 
-  // Sync all local records to Firestore when user connects
-  async syncLocalToCloud(currentFamily?: FamilyProfile): Promise<{ success: boolean; syncedCount: number }> {
-    if (!auth.currentUser) return { success: false, syncedCount: 0 };
+  // Force full bidirectional sync between cloud and local device
+  async forceFullSync(currentFamily?: FamilyProfile): Promise<{ success: boolean; syncedCount: number; message: string }> {
     let syncedCount = 0;
     try {
-      const fam = currentFamily || getLocal<FamilyProfile>('family_profile', INITIAL_FAMILY);
-      const memberUids = Array.from(new Set([...(fam.memberUids || []), auth.currentUser.uid]));
-      const membersNames = {
-        ...(fam.membersNames || {}),
-        [auth.currentUser.uid]: auth.currentUser.displayName || auth.currentUser.email || 'Admin',
-      };
-      const updatedFam: FamilyProfile = {
-        ...fam,
-        memberUids,
-        membersNames,
-        updatedAt: new Date().toISOString(),
-      };
-      await setDoc(doc(db, 'families', this.familyId), cleanForFirestore(updatedFam), { merge: true });
-      setLocal('family_profile', updatedFam);
-      syncedCount++;
+      // 1. Family profile sync
+      const famRef = doc(db, 'families', this.familyId);
+      const famSnap = await getDoc(famRef);
+      let activeFamily = currentFamily || getLocal<FamilyProfile>('family_profile', INITIAL_FAMILY);
+      if (famSnap.exists()) {
+        const cloudFam = famSnap.data() as FamilyProfile;
+        activeFamily = { ...activeFamily, ...cloudFam };
+        setLocal('family_profile', activeFamily);
+      } else {
+        await setDoc(famRef, cleanForFirestore(activeFamily), { merge: true });
+        syncedCount++;
+      }
 
-      // Sync Feedings
+      // 2. Feedings sync
+      const feedingsRef = collection(db, 'families', this.familyId, 'feedings');
+      const feedingsSnap = await getDocs(feedingsRef);
+      const cloudFeedings: FeedingRecord[] = [];
+      feedingsSnap.forEach(d => cloudFeedings.push({ ...(d.data() as FeedingRecord), id: d.id }));
+
       const localFeedings = getLocal<FeedingRecord[]>(`feedings_${this.familyId}`, []);
       for (const feed of localFeedings) {
-        await setDoc(doc(db, 'families', this.familyId, 'feedings', feed.id), cleanForFirestore({
-          ...feed,
-          loggedByUid: feed.loggedByUid || auth.currentUser.uid,
-        }), { merge: true });
-        syncedCount++;
+        if (!cloudFeedings.some(cf => cf.id === feed.id)) {
+          await setDoc(doc(db, 'families', this.familyId, 'feedings', feed.id), cleanForFirestore(feed), { merge: true });
+          cloudFeedings.push(feed);
+          syncedCount++;
+        }
+      }
+      cloudFeedings.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      if (cloudFeedings.length > 0) {
+        setLocal(`feedings_${this.familyId}`, cloudFeedings);
       }
 
-      // Sync Diapers
+      // 3. Diapers sync
+      const diapersRef = collection(db, 'families', this.familyId, 'diapers');
+      const diapersSnap = await getDocs(diapersRef);
+      const cloudDiapers: DiaperRecord[] = [];
+      diapersSnap.forEach(d => cloudDiapers.push({ ...(d.data() as DiaperRecord), id: d.id }));
+
       const localDiapers = getLocal<DiaperRecord[]>(`diapers_${this.familyId}`, []);
       for (const diaper of localDiapers) {
-        await setDoc(doc(db, 'families', this.familyId, 'diapers', diaper.id), cleanForFirestore({
-          ...diaper,
-          loggedByUid: diaper.loggedByUid || auth.currentUser.uid,
-        }), { merge: true });
-        syncedCount++;
+        if (!cloudDiapers.some(cd => cd.id === diaper.id)) {
+          await setDoc(doc(db, 'families', this.familyId, 'diapers', diaper.id), cleanForFirestore(diaper), { merge: true });
+          cloudDiapers.push(diaper);
+          syncedCount++;
+        }
+      }
+      cloudDiapers.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      if (cloudDiapers.length > 0) {
+        setLocal(`diapers_${this.familyId}`, cloudDiapers);
       }
 
-      // Sync Sleeps
+      // 4. Sleeps sync
+      const sleepsRef = collection(db, 'families', this.familyId, 'sleeps');
+      const sleepsSnap = await getDocs(sleepsRef);
+      const cloudSleeps: SleepRecord[] = [];
+      sleepsSnap.forEach(d => cloudSleeps.push({ ...(d.data() as SleepRecord), id: d.id }));
+
       const localSleeps = getLocal<SleepRecord[]>(`sleeps_${this.familyId}`, []);
       for (const sleep of localSleeps) {
-        await setDoc(doc(db, 'families', this.familyId, 'sleeps', sleep.id), cleanForFirestore({
-          ...sleep,
-          loggedByUid: sleep.loggedByUid || auth.currentUser.uid,
-        }), { merge: true });
-        syncedCount++;
+        if (!cloudSleeps.some(cs => cs.id === sleep.id)) {
+          await setDoc(doc(db, 'families', this.familyId, 'sleeps', sleep.id), cleanForFirestore(sleep), { merge: true });
+          cloudSleeps.push(sleep);
+          syncedCount++;
+        }
+      }
+      cloudSleeps.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+      if (cloudSleeps.length > 0) {
+        setLocal(`sleeps_${this.familyId}`, cloudSleeps);
       }
 
-      // Sync Inventory
+      // 5. Inventory sync
+      const invRef = collection(db, 'families', this.familyId, 'inventory');
+      const invSnap = await getDocs(invRef);
+      const cloudInventory: InventoryItem[] = [];
+      invSnap.forEach(d => cloudInventory.push({ ...(d.data() as InventoryItem), id: d.id }));
+
       const localInventory = getLocal<InventoryItem[]>(`inventory_${this.familyId}`, INITIAL_INVENTORY);
-      for (const item of localInventory) {
-        await setDoc(doc(db, 'families', this.familyId, 'inventory', item.id), cleanForFirestore(item), { merge: true });
-        syncedCount++;
+      if (cloudInventory.length === 0) {
+        for (const item of localInventory) {
+          await setDoc(doc(db, 'families', this.familyId, 'inventory', item.id), cleanForFirestore(item), { merge: true });
+          syncedCount++;
+        }
+      } else {
+        for (const item of localInventory) {
+          if (!cloudInventory.some(ci => ci.id === item.id)) {
+            await setDoc(doc(db, 'families', this.familyId, 'inventory', item.id), cleanForFirestore(item), { merge: true });
+            cloudInventory.push(item);
+            syncedCount++;
+          }
+        }
+        setLocal(`inventory_${this.familyId}`, cloudInventory);
       }
 
-      // Sync Medical
+      // 6. Medical records sync
+      const medRef = collection(db, 'families', this.familyId, 'medical');
+      const medSnap = await getDocs(medRef);
+      const cloudMedical: MedicalRecord[] = [];
+      medSnap.forEach(d => cloudMedical.push({ ...(d.data() as MedicalRecord), id: d.id }));
+
       const localMedical = getLocal<MedicalRecord[]>(`medical_${this.familyId}`, INITIAL_VACCINES);
-      for (const med of localMedical) {
-        await setDoc(doc(db, 'families', this.familyId, 'medical', med.id), cleanForFirestore({
-          ...med,
-          loggedByUid: med.loggedByUid || auth.currentUser.uid,
-        }), { merge: true });
-        syncedCount++;
+      if (cloudMedical.length === 0) {
+        for (const med of localMedical) {
+          await setDoc(doc(db, 'families', this.familyId, 'medical', med.id), cleanForFirestore(med), { merge: true });
+          syncedCount++;
+        }
+      } else {
+        for (const med of localMedical) {
+          if (!cloudMedical.some(cm => cm.id === med.id)) {
+            await setDoc(doc(db, 'families', this.familyId, 'medical', med.id), cleanForFirestore(med), { merge: true });
+            cloudMedical.push(med);
+            syncedCount++;
+          }
+        }
+        setLocal(`medical_${this.familyId}`, cloudMedical);
       }
 
-      console.log(`Cloud sync completed! ${syncedCount} records synced to Firestore.`);
-      return { success: true, syncedCount };
-    } catch (err) {
-      console.error('Error during syncLocalToCloud:', err);
-      return { success: false, syncedCount };
+      return {
+        success: true,
+        syncedCount,
+        message: '¡Sincronización en la nube completada en todos tus dispositivos!',
+      };
+    } catch (err: any) {
+      console.error('Error during forceFullSync:', err);
+      return {
+        success: false,
+        syncedCount,
+        message: err?.message || 'Error de sincronización con la nube.',
+      };
     }
+  }
+
+  // Backward compatibility alias for syncLocalToCloud
+  async syncLocalToCloud(currentFamily?: FamilyProfile): Promise<{ success: boolean; syncedCount: number }> {
+    const res = await this.forceFullSync(currentFamily);
+    return { success: res.success, syncedCount: res.syncedCount };
   }
 
   // Subscribe to Feedings
@@ -728,9 +786,7 @@ export class DataService {
     
     // Save to Firestore & local
     try {
-      if (auth.currentUser) {
-        await setDoc(doc(db, 'families', this.familyId, 'feedings', enriched.id), cleanForFirestore(enriched), { merge: true });
-      }
+      await setDoc(doc(db, 'families', this.familyId, 'feedings', enriched.id), cleanForFirestore(enriched), { merge: true });
     } catch (err) {
       console.warn('Cloud save feeding fallback to local:', err);
     }
@@ -764,9 +820,7 @@ export class DataService {
     };
 
     try {
-      if (auth.currentUser) {
-        await setDoc(doc(db, 'families', this.familyId, 'diapers', enriched.id), cleanForFirestore(enriched), { merge: true });
-      }
+      await setDoc(doc(db, 'families', this.familyId, 'diapers', enriched.id), cleanForFirestore(enriched), { merge: true });
     } catch (err) {
       console.warn('Cloud save diaper fallback to local:', err);
     }
@@ -814,9 +868,7 @@ export class DataService {
     };
 
     try {
-      if (auth.currentUser) {
-        await setDoc(doc(db, 'families', this.familyId, 'sleeps', enriched.id), cleanForFirestore(enriched), { merge: true });
-      }
+      await setDoc(doc(db, 'families', this.familyId, 'sleeps', enriched.id), cleanForFirestore(enriched), { merge: true });
     } catch (err) {
       console.warn('Cloud save sleep fallback to local:', err);
     }
@@ -830,9 +882,7 @@ export class DataService {
   // Save/Update Inventory Item
   async saveInventoryItem(item: InventoryItem) {
     try {
-      if (auth.currentUser) {
-        await setDoc(doc(db, 'families', this.familyId, 'inventory', item.id), cleanForFirestore(item), { merge: true });
-      }
+      await setDoc(doc(db, 'families', this.familyId, 'inventory', item.id), cleanForFirestore(item), { merge: true });
     } catch (err) {
       console.warn('Cloud save inventory item fallback to local:', err);
     }
@@ -859,9 +909,7 @@ export class DataService {
     };
 
     try {
-      if (auth.currentUser) {
-        await setDoc(doc(db, 'families', this.familyId, 'inventory', itemId), cleanForFirestore(updatedItem), { merge: true });
-      }
+      await setDoc(doc(db, 'families', this.familyId, 'inventory', itemId), cleanForFirestore(updatedItem), { merge: true });
     } catch (err) {
       console.warn('Cloud update quantity fallback to local:', err);
     }
@@ -879,9 +927,7 @@ export class DataService {
     };
 
     try {
-      if (auth.currentUser) {
-        await setDoc(doc(db, 'families', this.familyId, 'medical', enriched.id), cleanForFirestore(enriched), { merge: true });
-      }
+      await setDoc(doc(db, 'families', this.familyId, 'medical', enriched.id), cleanForFirestore(enriched), { merge: true });
     } catch (err) {
       console.warn('Cloud save medical fallback to local:', err);
     }
@@ -898,14 +944,12 @@ export class DataService {
   // Save Multiple Medical Records at once
   async saveBatchMedicalRecords(newRecords: MedicalRecord[]) {
     try {
-      if (auth.currentUser) {
-        for (const record of newRecords) {
-          const enriched = {
-            ...record,
-            loggedByUid: record.loggedByUid || auth.currentUser?.uid || '',
-          };
-          await setDoc(doc(db, 'families', this.familyId, 'medical', record.id), cleanForFirestore(enriched), { merge: true });
-        }
+      for (const record of newRecords) {
+        const enriched = {
+          ...record,
+          loggedByUid: record.loggedByUid || auth.currentUser?.uid || '',
+        };
+        await setDoc(doc(db, 'families', this.familyId, 'medical', record.id), cleanForFirestore(enriched), { merge: true });
       }
     } catch (err) {
       console.warn('Cloud save batch medical fallback to local:', err);
@@ -921,9 +965,7 @@ export class DataService {
   // Delete Record
   async deleteRecord(collectionName: 'feedings' | 'diapers' | 'sleeps' | 'inventory' | 'medical', id: string) {
     try {
-      if (auth.currentUser) {
-        await deleteDoc(doc(db, 'families', this.familyId, collectionName, id));
-      }
+      await deleteDoc(doc(db, 'families', this.familyId, collectionName, id));
     } catch (err) {
       console.warn(`Cloud delete from ${collectionName} fallback to local:`, err);
     }

@@ -12,8 +12,7 @@ import {
 import { FamilyProfile, SleepRecord } from '../types';
 import { SparkleGlow, StarSparkle } from './SparkleEffect';
 
-import { User } from 'firebase/auth';
-import { Cloud, CloudOff } from 'lucide-react';
+import { Cloud, RefreshCw } from 'lucide-react';
 
 interface HeaderProps {
   family: FamilyProfile;
@@ -24,9 +23,9 @@ interface HeaderProps {
   onOpenSyncModal: () => void;
   currentCaregiver: string;
   setCurrentCaregiver: (caregiver: string) => void;
-  isCloudConnected: boolean;
-  currentUser?: User | null;
-  onQuickGoogleLogin?: () => void;
+  isCloudConnected?: boolean;
+  onForceSync: () => Promise<any>;
+  isSyncing?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -38,9 +37,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSyncModal,
   currentCaregiver,
   setCurrentCaregiver,
-  isCloudConnected,
-  currentUser,
-  onQuickGoogleLogin,
+  isCloudConnected = true,
+  onForceSync,
+  isSyncing = false,
 }) => {
   // Calculate baby age
   const calculateAge = () => {
@@ -149,35 +148,35 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             </div>
 
-            {/* Sync Status Button */}
-            {currentUser ? (
+            {/* Cloud Status & Force Sync Button */}
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={onOpenSyncModal}
-                title={`Sincronizado en la nube como ${currentUser.displayName || currentUser.email}`}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-all cursor-pointer shadow-sm"
+                title="Sincronización en la nube activa en tiempo real"
+                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-all cursor-pointer shadow-sm"
               >
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                <Cloud size={14} className="text-emerald-600 dark:text-emerald-400" />
+                <Cloud size={14} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span className="hidden sm:inline">En la Nube</span>
               </button>
-            ) : (
+
               <button
                 type="button"
-                onClick={onQuickGoogleLogin || onOpenSyncModal}
-                title="Sincronizar cambios en múltiples dispositivos"
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 border border-amber-400/40 text-amber-800 dark:text-amber-300 text-xs font-bold hover:bg-amber-500/20 transition-all cursor-pointer shadow-sm animate-pulse"
+                onClick={onForceSync}
+                disabled={isSyncing}
+                title="Forzar actualización y sincronización con todos los dispositivos ahora"
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 border border-blue-300/80 dark:border-blue-800/60 text-blue-700 dark:text-blue-300 text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all cursor-pointer shadow-sm ${
+                  isSyncing ? 'opacity-70 cursor-wait' : ''
+                }`}
               >
-                <span className="relative flex h-2 w-2">
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                </span>
-                <CloudOff size={14} className="text-amber-600 dark:text-amber-400" />
-                <span className="font-semibold">Sincronizar</span>
+                <RefreshCw size={13} className={`text-blue-600 dark:text-blue-400 shrink-0 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Forzar Sincro</span>
               </button>
-            )}
+            </div>
 
             {/* Dark Mode Toggle */}
             <button

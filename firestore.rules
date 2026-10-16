@@ -1,111 +1,19 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Families and all subcollections (feedings, diapers, sleeps, inventory, medical, reminders)
+    // Synchronize seamlessly across all devices without requiring login
+    match /families/{familyId} {
+      allow read, write: if true;
 
-    // Default deny catch-all
+      match /{subcollection=**} {
+        allow read, write: if true;
+      }
+    }
+
+    // Default deny for other paths
     match /{document=**} {
       allow read, write: if false;
-    }
-
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isAdmin() {
-      return isSignedIn() && (
-        request.auth.token.email == 'andresmisel@gmail.com' ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-      );
-    }
-
-    function isValidId(id) {
-      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
-    function isFamilyMember(familyId) {
-      return isSignedIn() && (
-        isAdmin() ||
-        (
-          exists(/databases/$(database)/documents/families/$(familyId)) &&
-          (
-            request.auth.uid in get(/databases/$(database)/documents/families/$(familyId)).data.memberUids ||
-            get(/databases/$(database)/documents/families/$(familyId)).data.createdBy == request.auth.uid
-          )
-        )
-      );
-    }
-
-    // User profiles
-    match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow create, update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow delete: if isAdmin();
-    }
-
-    // Families
-    match /families/{familyId} {
-      // Any authenticated user can read family document
-      allow read: if isSignedIn();
-      
-      // Allow creation of family document
-      allow create: if isSignedIn() && isValidId(familyId) &&
-        request.resource.data.name is string &&
-        request.resource.data.babyName is string;
-
-      // Allow update if admin, creator, current member, or joining with correct family code
-      allow update: if isSignedIn() && (
-        isAdmin() ||
-        !exists(/databases/$(database)/documents/families/$(familyId)) ||
-        resource.data.createdBy == request.auth.uid ||
-        (request.auth.uid in resource.data.memberUids) ||
-        (request.resource.data.familyCode == resource.data.familyCode &&
-         request.auth.uid in request.resource.data.memberUids)
-      );
-
-      allow delete: if isSignedIn() && (
-        isAdmin() || (exists(/databases/$(database)/documents/families/$(familyId)) && resource.data.createdBy == request.auth.uid)
-      );
-
-      // Feedings subcollection
-      match /feedings/{feedingId} {
-        allow read: if isFamilyMember(familyId);
-        allow create, update: if isFamilyMember(familyId) && isValidId(feedingId) &&
-          request.resource.data.familyId == familyId;
-        allow delete: if isFamilyMember(familyId);
-      }
-
-      // Diapers subcollection
-      match /diapers/{diaperId} {
-        allow read: if isFamilyMember(familyId);
-        allow create, update: if isFamilyMember(familyId) && isValidId(diaperId) &&
-          request.resource.data.familyId == familyId;
-        allow delete: if isFamilyMember(familyId);
-      }
-
-      // Sleeps subcollection
-      match /sleeps/{sleepId} {
-        allow read: if isFamilyMember(familyId);
-        allow create, update: if isFamilyMember(familyId) && isValidId(sleepId) &&
-          request.resource.data.familyId == familyId;
-        allow delete: if isFamilyMember(familyId);
-      }
-
-      // Inventory subcollection
-      match /inventory/{itemId} {
-        allow read: if isFamilyMember(familyId);
-        allow create, update: if isFamilyMember(familyId) && isValidId(itemId) &&
-          request.resource.data.familyId == familyId;
-        allow delete: if isFamilyMember(familyId);
-      }
-
-      // Medical appointments, vaccines, growth and medications
-      match /medical/{recordId} {
-        allow read: if isFamilyMember(familyId);
-        allow create, update: if isFamilyMember(familyId) && isValidId(recordId) &&
-          request.resource.data.familyId == familyId;
-        allow delete: if isFamilyMember(familyId);
-      }
     }
   }
 }
