@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --royal-blue: #1d4ed8;
+    --royal-blue-light: #3b82f6;
+    --royal-blue-dark: #1e3a8a;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Sparkle & Shimmer Animations */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.8) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.2) rotate(180deg); }
+}
+
+@keyframes royalGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(37, 99, 235, 0.25), inset 0 0 10px rgba(59, 130, 246, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(37, 99, 235, 0.5), inset 0 0 15px rgba(59, 130, 246, 0.25);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.sparkle-twinkle {
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+.sparkle-twinkle-delayed {
+  animation: twinkle 3s ease-in-out infinite 1.5s;
+}
+
+.royal-glow {
+  animation: royalGlow 4s ease-in-out infinite;
+}
+
+.royal-shimmer-text {
+  background: linear-gradient(90deg, #60a5fa 0%, #ffffff 50%, #60a5fa 100%);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(37, 99, 235, 0.6);
+}

@@ -1,0 +1,158 @@
+{
+  "entities": {
+    "Family": {
+      "title": "Family",
+      "description": "A family unit sharing caretaking tracking for a baby.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "babyName": { "type": "string", "maxLength": 100 },
+        "babyBirthDate": { "type": "string", "maxLength": 30 },
+        "familyCode": { "type": "string", "maxLength": 20 },
+        "memberUids": { "type": "array", "description": "UIDs of authorized parents/guardians" },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["name", "babyName", "familyCode", "createdBy"]
+    },
+    "Feeding": {
+      "title": "Feeding",
+      "description": "A milk or formula intake entry.",
+      "type": "object",
+      "properties": {
+        "familyId": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "enum": ["formula", "breast_bottle", "breast_direct", "mixed"] },
+        "amountMl": { "type": "number" },
+        "amountOz": { "type": "number" },
+        "durationMinutes": { "type": "number" },
+        "breastSide": { "type": "string", "enum": ["left", "right", "both", "none"] },
+        "timestamp": { "type": "string", "maxLength": 50 },
+        "notes": { "type": "string", "maxLength": 500 },
+        "loggedBy": { "type": "string", "maxLength": 100 },
+        "loggedByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["familyId", "type", "timestamp", "loggedByUid"]
+    },
+    "Diaper": {
+      "title": "Diaper",
+      "description": "A diaper change log.",
+      "type": "object",
+      "properties": {
+        "familyId": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "enum": ["wet", "dirty", "mixed", "clean"] },
+        "color": { "type": "string", "maxLength": 50 },
+        "consistency": { "type": "string", "maxLength": 50 },
+        "creamApplied": { "type": "boolean" },
+        "timestamp": { "type": "string", "maxLength": 50 },
+        "notes": { "type": "string", "maxLength": 500 },
+        "loggedBy": { "type": "string", "maxLength": 100 },
+        "loggedByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["familyId", "type", "timestamp", "loggedByUid"]
+    },
+    "Sleep": {
+      "title": "Sleep",
+      "description": "A sleep duration session.",
+      "type": "object",
+      "properties": {
+        "familyId": { "type": "string", "maxLength": 128 },
+        "startTime": { "type": "string", "maxLength": 50 },
+        "endTime": { "type": "string", "maxLength": 50 },
+        "durationMinutes": { "type": "number" },
+        "sleepType": { "type": "string", "enum": ["nap", "night"] },
+        "quality": { "type": "string", "maxLength": 50 },
+        "notes": { "type": "string", "maxLength": 500 },
+        "loggedBy": { "type": "string", "maxLength": 100 },
+        "loggedByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["familyId", "startTime", "endTime", "durationMinutes", "loggedByUid"]
+    },
+    "InventoryItem": {
+      "title": "InventoryItem",
+      "description": "Tracked baby consumable supplies.",
+      "type": "object",
+      "properties": {
+        "familyId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "category": { "type": "string", "enum": ["diapers", "formula", "wipes", "medicine", "other"] },
+        "currentQuantity": { "type": "number" },
+        "unit": { "type": "string", "maxLength": 30 },
+        "minThreshold": { "type": "number" },
+        "criticalThreshold": { "type": "number" },
+        "sizeOrDetail": { "type": "string", "maxLength": 50 },
+        "notes": { "type": "string", "maxLength": 200 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["familyId", "name", "category", "currentQuantity", "unit"]
+    },
+    "MedicalRecord": {
+      "title": "MedicalRecord",
+      "description": "Pediatric appointments and vaccines.",
+      "type": "object",
+      "properties": {
+        "familyId": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "enum": ["appointment", "vaccine"] },
+        "title": { "type": "string", "maxLength": 150 },
+        "providerOrDoctor": { "type": "string", "maxLength": 100 },
+        "date": { "type": "string", "maxLength": 30 },
+        "time": { "type": "string", "maxLength": 20 },
+        "status": { "type": "string", "enum": ["pending", "completed", "cancelled"] },
+        "weightKg": { "type": "number" },
+        "heightCm": { "type": "number" },
+        "notes": { "type": "string", "maxLength": 500 },
+        "doseNumber": { "type": "string", "maxLength": 30 },
+        "loggedByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["familyId", "type", "title", "date", "status", "loggedByUid"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with linked family ID.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 150 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "photoUrl": { "type": "string", "maxLength": 300 },
+        "familyId": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "maxLength": 50 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["email", "displayName"]
+    }
+  },
+  "firestore": {
+    "/families/{familyId}": {
+      "schema": "Family",
+      "description": "Family shared workspace for Evan Tracker"
+    },
+    "/families/{familyId}/feedings/{feedingId}": {
+      "schema": "Feeding",
+      "description": "Bottle and breast feeding records"
+    },
+    "/families/{familyId}/diapers/{diaperId}": {
+      "schema": "Diaper",
+      "description": "Diaper change records"
+    },
+    "/families/{familyId}/sleeps/{sleepId}": {
+      "schema": "Sleep",
+      "description": "Sleep session records"
+    },
+    "/families/{familyId}/inventory/{itemId}": {
+      "schema": "InventoryItem",
+      "description": "Inventory items with auto-deduction"
+    },
+    "/families/{familyId}/medical/{recordId}": {
+      "schema": "MedicalRecord",
+      "description": "Vaccines and doctor appointments"
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document"
+    }
+  }
+}
