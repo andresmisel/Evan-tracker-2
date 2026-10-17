@@ -40,352 +40,13 @@ export const INITIAL_FAMILY: FamilyProfile = {
   updatedAt: new Date().toISOString(),
 };
 
-export const INITIAL_INVENTORY: InventoryItem[] = [
-  {
-    id: 'item-diapers-t2',
-    familyId: DEFAULT_FAMILY_ID,
-    name: 'Pañales Talla 2 (4 a 8 kg)',
-    category: 'diapers',
-    currentQuantity: 34,
-    unit: 'pañales',
-    minThreshold: 20,
-    criticalThreshold: 10,
-    sizeOrDetail: 'Talla 2 Confort Sec',
-    autoDeductEnabled: true,
-    notes: 'Uso habitual actual',
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'item-diapers-t1',
-    familyId: DEFAULT_FAMILY_ID,
-    name: 'Pañales Talla 1 (2 a 5 kg)',
-    category: 'diapers',
-    currentQuantity: 16,
-    unit: 'pañales',
-    minThreshold: 15,
-    criticalThreshold: 8,
-    sizeOrDetail: 'Talla 1 Recién Nacido Plus',
-    autoDeductEnabled: true,
-    notes: 'Pañales de reserva',
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'item-formula-stage1',
-    familyId: DEFAULT_FAMILY_ID,
-    name: 'Fórmula Infantil Etapa 1 (800g)',
-    category: 'formula',
-    currentQuantity: 3,
-    unit: 'latas',
-    minThreshold: 2,
-    criticalThreshold: 1,
-    sizeOrDetail: 'Lata 800g (aprox. 55 tomas)',
-    autoDeductEnabled: true,
-    notes: 'Rinde 7-8 días por lata',
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'item-wipes',
-    familyId: DEFAULT_FAMILY_ID,
-    name: 'Toallitas Húmedas Hipoalergénicas',
-    category: 'wipes',
-    currentQuantity: 4,
-    unit: 'paquetes',
-    minThreshold: 3,
-    criticalThreshold: 1,
-    sizeOrDetail: 'Paquete x 80 toallitas',
-    autoDeductEnabled: true,
-    notes: 'Sin perfume, para piel sensible',
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'item-cream',
-    familyId: DEFAULT_FAMILY_ID,
-    name: 'Crema Protectora Antipañalitis',
-    category: 'cream',
-    currentQuantity: 2,
-    unit: 'tubos',
-    minThreshold: 2,
-    criticalThreshold: 1,
-    sizeOrDetail: 'Tubo 100g con Óxido de Zinc',
-    autoDeductEnabled: false,
-    notes: 'Aplicar capa delgada en la noche',
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'item-vitamind',
-    familyId: DEFAULT_FAMILY_ID,
-    name: 'Vitamina D3 en Gotas',
-    category: 'medicine',
-    currentQuantity: 1,
-    unit: 'frascos',
-    minThreshold: 1,
-    criticalThreshold: 1,
-    sizeOrDetail: 'Frasco gotero 10ml',
-    autoDeductEnabled: false,
-    notes: '1 gota diaria (400 UI) recomendada por pediatra',
-    updatedAt: new Date().toISOString(),
-  },
-];
+export const INITIAL_INVENTORY: InventoryItem[] = [];
 
-export const INITIAL_VACCINES: MedicalRecord[] = [
-  {
-    id: 'vac-bcg',
-    familyId: DEFAULT_FAMILY_ID,
-    type: 'vaccine',
-    title: 'BCG (Tuberculosis)',
-    targetAge: 'Al nacer',
-    date: '2026-06-16',
-    status: 'completed',
-    doseNumber: 'Dosis única',
-    notes: 'Aplicada en hospital al nacimiento.',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'vac-hepb-birth',
-    familyId: DEFAULT_FAMILY_ID,
-    type: 'vaccine',
-    title: 'Hepatitis B (Pediátrica)',
-    targetAge: 'Al nacer',
-    date: '2026-06-16',
-    status: 'completed',
-    doseNumber: '1ª Dosis',
-    notes: 'Aplicada sin reacciones adversas.',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'vac-penta-2m',
-    familyId: DEFAULT_FAMILY_ID,
-    type: 'vaccine',
-    title: 'Pentavalente / Hexavalente',
-    targetAge: '2 meses',
-    date: '2026-08-16',
-    status: 'completed',
-    doseNumber: '1ª Dosis',
-    notes: 'Difteria, Tétanos, Tos ferina, Hep B, Hib, Polio.',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'vac-rotavirus-2m',
-    familyId: DEFAULT_FAMILY_ID,
-    type: 'vaccine',
-    title: 'Rotavirus (Oral)',
-    targetAge: '2 meses',
-    date: '2026-08-16',
-    status: 'completed',
-    doseNumber: '1ª Dosis',
-    notes: 'Gotitas orales toleradas adecuadamente.',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'vac-pneumo-2m',
-    familyId: DEFAULT_FAMILY_ID,
-    type: 'vaccine',
-    title: 'Neumococo Conjugada',
-    targetAge: '2 meses',
-    date: '2026-08-16',
-    status: 'completed',
-    doseNumber: '1ª Dosis',
-    notes: 'Leve enrojecimiento local que cedió en 24h.',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'vac-penta-4m',
-    familyId: DEFAULT_FAMILY_ID,
-    type: 'vaccine',
-    title: 'Pentavalente / Hexavalente',
-    targetAge: '4 meses',
-    date: '2026-10-18',
-    time: '10:00',
-    status: 'pending',
-    doseNumber: '2ª Dosis',
-    providerOrDoctor: 'Dra. Valentina Morales (Pediatría)',
-    notes: 'Tener Paracetamol pediátrico en casa por si presenta febrícula.',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'vac-pneumo-4m',
-    familyId: DEFAULT_FAMILY_ID,
-    type: 'vaccine',
-    title: 'Neumococo Conjugada',
-    targetAge: '4 meses',
-    date: '2026-10-18',
-    time: '10:15',
-    status: 'pending',
-    doseNumber: '2ª Dosis',
-    providerOrDoctor: 'Dra. Valentina Morales',
-    notes: 'Programada junto con la 2ª pentavalente.',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'med-checkup-4m',
-    familyId: DEFAULT_FAMILY_ID,
-    type: 'appointment',
-    title: 'Control Pediátrico 4to Mes (Crecimiento y Desarrollo)',
-    providerOrDoctor: 'Dra. Valentina Morales',
-    date: '2026-10-25',
-    time: '16:30',
-    status: 'pending',
-    notes: 'Preguntar sobre inicio de ablactación / alimentación complementaria.',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'growth-birth',
-    familyId: DEFAULT_FAMILY_ID,
-    type: 'growth',
-    title: 'Somatometría al Nacimiento',
-    targetAge: 'Al nacer',
-    date: '2026-06-16',
-    weightKg: 3.35,
-    heightCm: 50.0,
-    headCircumferenceCm: 35.0,
-    status: 'completed',
-    providerOrDoctor: 'Hospital Materno Infantil',
-    notes: 'Apgar 9/10. Medidas neonatales en rango percentil 50.',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'growth-1m',
-    familyId: DEFAULT_FAMILY_ID,
-    type: 'growth',
-    title: 'Control 1er Mes',
-    targetAge: '1 mes',
-    date: '2026-07-16',
-    weightKg: 4.30,
-    heightCm: 54.2,
-    headCircumferenceCm: 37.2,
-    status: 'completed',
-    providerOrDoctor: 'Dra. Valentina Morales',
-    notes: 'Ganancia ponderal óptima (+950g). Reflejos normales.',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'growth-2m',
-    familyId: DEFAULT_FAMILY_ID,
-    type: 'growth',
-    title: 'Control 2do Mes',
-    targetAge: '2 meses',
-    date: '2026-08-16',
-    weightKg: 5.25,
-    heightCm: 58.0,
-    headCircumferenceCm: 39.1,
-    status: 'completed',
-    providerOrDoctor: 'Dra. Valentina Morales',
-    notes: 'Curva de peso en percentil 50. Sonrisa social activa.',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'growth-4m',
-    familyId: DEFAULT_FAMILY_ID,
-    type: 'growth',
-    title: 'Control 4to Mes',
-    targetAge: '4 meses',
-    date: '2026-10-10',
-    weightKg: 6.45,
-    heightCm: 63.5,
-    headCircumferenceCm: 41.6,
-    status: 'completed',
-    providerOrDoctor: 'Dra. Valentina Morales',
-    notes: 'Excelente tono muscular. Curva de peso y talla armónica.',
-    createdAt: new Date().toISOString(),
-  },
-];
+export const INITIAL_VACCINES: MedicalRecord[] = [];
 
-// Helper to seed sample feedings and diapers so charts are immediately populated
-export function generateSeedActivities(familyId: string) {
-  const feedings: FeedingRecord[] = [];
-  const diapers: DiaperRecord[] = [];
-  const sleeps: SleepRecord[] = [];
-
-  const now = new Date();
-  
-  // Seed past 7 days of realistic logs
-  for (let d = 6; d >= 0; d--) {
-    const dayDate = new Date(now.getTime() - d * 24 * 60 * 60 * 1000);
-    const dayStr = dayDate.toISOString().split('T')[0];
-
-    // 5-6 feedings per day
-    const feedingHours = [3, 7, 11, 15, 18, 22];
-    feedingHours.forEach((hour, idx) => {
-      const feedTime = new Date(dayDate);
-      feedTime.setHours(hour, Math.floor(Math.random() * 30), 0);
-      
-      const isFormula = idx % 2 === 0;
-      const ml = isFormula ? 120 + Math.floor(Math.random() * 30) : 110 + Math.floor(Math.random() * 20);
-      feedings.push({
-        id: `feed-seed-${d}-${idx}`,
-        familyId,
-        type: isFormula ? 'formula' : 'breast_bottle',
-        amountMl: ml,
-        amountOz: Number((ml / 29.5735).toFixed(1)),
-        durationMinutes: 15 + Math.floor(Math.random() * 10),
-        timestamp: feedTime.toISOString(),
-        notes: isFormula ? 'Toma tranquila con biberón anticólicos' : 'Leche materna refrigerada tibia',
-        loggedBy: idx % 2 === 0 ? 'Mamá' : 'Papá',
-        createdAt: feedTime.toISOString(),
-      });
-    });
-
-    // 5-7 diaper changes per day
-    const diaperHours = [4, 8, 12, 14, 17, 20];
-    diaperHours.forEach((hour, idx) => {
-      const diaperTime = new Date(dayDate);
-      diaperTime.setHours(hour, Math.floor(Math.random() * 30), 0);
-      const isDirty = idx === 1 || idx === 4;
-      const isMixed = idx === 3;
-      diapers.push({
-        id: `diaper-seed-${d}-${idx}`,
-        familyId,
-        type: isMixed ? 'mixed' : isDirty ? 'dirty' : 'wet',
-        color: isDirty || isMixed ? 'mustard' : undefined,
-        consistency: isDirty || isMixed ? 'soft' : undefined,
-        creamApplied: isDirty || isMixed,
-        diaperSize: 'Talla 2',
-        timestamp: diaperTime.toISOString(),
-        notes: isDirty ? 'Consistencia normal color mostaza' : 'Pañal muy mojado',
-        loggedBy: idx % 2 === 0 ? 'Mamá' : 'Papá',
-        createdAt: diaperTime.toISOString(),
-      });
-    });
-
-    // 2-3 naps + 1 night sleep
-    // Night sleep from 21:00 previous to 06:30
-    const nightStart = new Date(dayDate);
-    nightStart.setHours(21, 30, 0);
-    const nightEnd = new Date(dayDate.getTime() + 8.5 * 60 * 60 * 1000);
-    nightEnd.setHours(6, 0, 0);
-    sleeps.push({
-      id: `sleep-night-${d}`,
-      familyId,
-      startTime: nightStart.toISOString(),
-      endTime: nightEnd.toISOString(),
-      durationMinutes: 510,
-      sleepType: 'night',
-      quality: 'calm',
-      notes: 'Despertó solo una vez para toma de las 3:00 am',
-      loggedBy: 'Mamá',
-      createdAt: nightStart.toISOString(),
-    });
-
-    // Afternoon nap
-    const napStart = new Date(dayDate);
-    napStart.setHours(13, 0, 0);
-    const napEnd = new Date(dayDate);
-    napEnd.setHours(14, 45, 0);
-    sleeps.push({
-      id: `sleep-nap-${d}`,
-      familyId,
-      startTime: napStart.toISOString(),
-      endTime: napEnd.toISOString(),
-      durationMinutes: 105,
-      sleepType: 'nap',
-      quality: 'calm',
-      notes: 'Siesta profunda en cuna con ruido blanco',
-      loggedBy: 'Papá',
-      createdAt: napStart.toISOString(),
-    });
-  }
-
-  return { feedings, diapers, sleeps };
+// Clean initial empty activities - the app starts completely clean and empty as requested
+export function generateSeedActivities(_familyId: string) {
+  return { feedings: [], diapers: [], sleeps: [] };
 }
 
 // Local Storage helpers
@@ -510,107 +171,44 @@ export class DataService {
       const cloudFeedings: FeedingRecord[] = [];
       feedingsSnap.forEach(d => cloudFeedings.push({ ...(d.data() as FeedingRecord), id: d.id }));
 
-      const localFeedings = getLocal<FeedingRecord[]>(`feedings_${this.familyId}`, []);
-      for (const feed of localFeedings) {
-        if (!cloudFeedings.some(cf => cf.id === feed.id)) {
-          await setDoc(doc(db, 'families', this.familyId, 'feedings', feed.id), cleanForFirestore(feed), { merge: true });
-          cloudFeedings.push(feed);
-          syncedCount++;
-        }
-      }
       cloudFeedings.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      if (cloudFeedings.length > 0) {
-        setLocal(`feedings_${this.familyId}`, cloudFeedings);
-      }
+      setLocal(`feedings_${this.familyId}`, cloudFeedings);
 
       // 3. Diapers sync
       const diapersRef = collection(db, 'families', this.familyId, 'diapers');
       const diapersSnap = await getDocs(diapersRef);
       const cloudDiapers: DiaperRecord[] = [];
       diapersSnap.forEach(d => cloudDiapers.push({ ...(d.data() as DiaperRecord), id: d.id }));
-
-      const localDiapers = getLocal<DiaperRecord[]>(`diapers_${this.familyId}`, []);
-      for (const diaper of localDiapers) {
-        if (!cloudDiapers.some(cd => cd.id === diaper.id)) {
-          await setDoc(doc(db, 'families', this.familyId, 'diapers', diaper.id), cleanForFirestore(diaper), { merge: true });
-          cloudDiapers.push(diaper);
-          syncedCount++;
-        }
-      }
       cloudDiapers.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      if (cloudDiapers.length > 0) {
-        setLocal(`diapers_${this.familyId}`, cloudDiapers);
-      }
+      setLocal(`diapers_${this.familyId}`, cloudDiapers);
 
       // 4. Sleeps sync
       const sleepsRef = collection(db, 'families', this.familyId, 'sleeps');
       const sleepsSnap = await getDocs(sleepsRef);
       const cloudSleeps: SleepRecord[] = [];
       sleepsSnap.forEach(d => cloudSleeps.push({ ...(d.data() as SleepRecord), id: d.id }));
-
-      const localSleeps = getLocal<SleepRecord[]>(`sleeps_${this.familyId}`, []);
-      for (const sleep of localSleeps) {
-        if (!cloudSleeps.some(cs => cs.id === sleep.id)) {
-          await setDoc(doc(db, 'families', this.familyId, 'sleeps', sleep.id), cleanForFirestore(sleep), { merge: true });
-          cloudSleeps.push(sleep);
-          syncedCount++;
-        }
-      }
       cloudSleeps.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
-      if (cloudSleeps.length > 0) {
-        setLocal(`sleeps_${this.familyId}`, cloudSleeps);
-      }
+      setLocal(`sleeps_${this.familyId}`, cloudSleeps);
 
       // 5. Inventory sync
       const invRef = collection(db, 'families', this.familyId, 'inventory');
       const invSnap = await getDocs(invRef);
       const cloudInventory: InventoryItem[] = [];
       invSnap.forEach(d => cloudInventory.push({ ...(d.data() as InventoryItem), id: d.id }));
-
-      const localInventory = getLocal<InventoryItem[]>(`inventory_${this.familyId}`, INITIAL_INVENTORY);
-      if (cloudInventory.length === 0) {
-        for (const item of localInventory) {
-          await setDoc(doc(db, 'families', this.familyId, 'inventory', item.id), cleanForFirestore(item), { merge: true });
-          syncedCount++;
-        }
-      } else {
-        for (const item of localInventory) {
-          if (!cloudInventory.some(ci => ci.id === item.id)) {
-            await setDoc(doc(db, 'families', this.familyId, 'inventory', item.id), cleanForFirestore(item), { merge: true });
-            cloudInventory.push(item);
-            syncedCount++;
-          }
-        }
-        setLocal(`inventory_${this.familyId}`, cloudInventory);
-      }
+      setLocal(`inventory_${this.familyId}`, cloudInventory);
 
       // 6. Medical records sync
       const medRef = collection(db, 'families', this.familyId, 'medical');
       const medSnap = await getDocs(medRef);
       const cloudMedical: MedicalRecord[] = [];
       medSnap.forEach(d => cloudMedical.push({ ...(d.data() as MedicalRecord), id: d.id }));
+      setLocal(`medical_${this.familyId}`, cloudMedical);
 
-      const localMedical = getLocal<MedicalRecord[]>(`medical_${this.familyId}`, INITIAL_VACCINES);
-      if (cloudMedical.length === 0) {
-        for (const med of localMedical) {
-          await setDoc(doc(db, 'families', this.familyId, 'medical', med.id), cleanForFirestore(med), { merge: true });
-          syncedCount++;
-        }
-      } else {
-        for (const med of localMedical) {
-          if (!cloudMedical.some(cm => cm.id === med.id)) {
-            await setDoc(doc(db, 'families', this.familyId, 'medical', med.id), cleanForFirestore(med), { merge: true });
-            cloudMedical.push(med);
-            syncedCount++;
-          }
-        }
-        setLocal(`medical_${this.familyId}`, cloudMedical);
-      }
-
+      const totalRecords = cloudFeedings.length + cloudDiapers.length + cloudSleeps.length + cloudInventory.length + cloudMedical.length;
       return {
         success: true,
-        syncedCount,
-        message: '¡Sincronización en la nube completada en todos tus dispositivos!',
+        syncedCount: totalRecords,
+        message: '¡Sincronización en la nube completada con éxito!',
       };
     } catch (err: any) {
       console.error('Error during forceFullSync:', err);
@@ -641,17 +239,11 @@ export class DataService {
         snapshot.forEach((d) => {
           records.push({ ...(d.data() as FeedingRecord), id: d.id });
         });
-        if (records.length > 0) {
-          setLocal(`feedings_${this.familyId}`, records);
-          callback(records);
-        } else {
-          const cached = getLocal<FeedingRecord[]>(`feedings_${this.familyId}`, []);
-          callback(cached);
-        }
+        setLocal(`feedings_${this.familyId}`, records);
+        callback(records);
       },
       (error) => {
-        console.warn('Firestore Feedings offline or permission fallback:', error.message);
-        // Fallback to local storage seamlessly
+        console.warn('Firestore Feedings offline fallback:', error.message);
         const cached = getLocal<FeedingRecord[]>(`feedings_${this.familyId}`, []);
         callback(cached);
       }
@@ -672,13 +264,8 @@ export class DataService {
         snapshot.forEach((d) => {
           records.push({ ...(d.data() as DiaperRecord), id: d.id });
         });
-        if (records.length > 0) {
-          setLocal(`diapers_${this.familyId}`, records);
-          callback(records);
-        } else {
-          const cached = getLocal<DiaperRecord[]>(`diapers_${this.familyId}`, []);
-          callback(cached);
-        }
+        setLocal(`diapers_${this.familyId}`, records);
+        callback(records);
       },
       (error) => {
         console.warn('Firestore Diapers offline fallback:', error.message);
@@ -702,13 +289,8 @@ export class DataService {
         snapshot.forEach((d) => {
           records.push({ ...(d.data() as SleepRecord), id: d.id });
         });
-        if (records.length > 0) {
-          setLocal(`sleeps_${this.familyId}`, records);
-          callback(records);
-        } else {
-          const cached = getLocal<SleepRecord[]>(`sleeps_${this.familyId}`, []);
-          callback(cached);
-        }
+        setLocal(`sleeps_${this.familyId}`, records);
+        callback(records);
       },
       (error) => {
         console.warn('Firestore Sleeps offline fallback:', error.message);
@@ -731,17 +313,12 @@ export class DataService {
         snapshot.forEach((d) => {
           items.push({ ...(d.data() as InventoryItem), id: d.id });
         });
-        if (items.length > 0) {
-          setLocal(`inventory_${this.familyId}`, items);
-          callback(items);
-        } else {
-          const cached = getLocal<InventoryItem[]>(`inventory_${this.familyId}`, INITIAL_INVENTORY);
-          callback(cached);
-        }
+        setLocal(`inventory_${this.familyId}`, items);
+        callback(items);
       },
       (error) => {
         console.warn('Firestore Inventory offline fallback:', error.message);
-        const cached = getLocal<InventoryItem[]>(`inventory_${this.familyId}`, INITIAL_INVENTORY);
+        const cached = getLocal<InventoryItem[]>(`inventory_${this.familyId}`, []);
         callback(cached);
       }
     );
@@ -760,17 +337,12 @@ export class DataService {
         snapshot.forEach((d) => {
           records.push({ ...(d.data() as MedicalRecord), id: d.id });
         });
-        if (records.length > 0) {
-          setLocal(`medical_${this.familyId}`, records);
-          callback(records);
-        } else {
-          const cached = getLocal<MedicalRecord[]>(`medical_${this.familyId}`, INITIAL_VACCINES);
-          callback(cached);
-        }
+        setLocal(`medical_${this.familyId}`, records);
+        callback(records);
       },
       (error) => {
         console.warn('Firestore Medical offline fallback:', error.message);
-        const cached = getLocal<MedicalRecord[]>(`medical_${this.familyId}`, INITIAL_VACCINES);
+        const cached = getLocal<MedicalRecord[]>(`medical_${this.familyId}`, []);
         callback(cached);
       }
     );

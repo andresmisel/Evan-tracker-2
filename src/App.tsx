@@ -37,13 +37,10 @@ import {
 import {
   DEFAULT_FAMILY_ID,
   INITIAL_FAMILY,
-  INITIAL_INVENTORY,
-  INITIAL_VACCINES,
   DataService,
   calculateProjections,
   getLocal,
   setLocal,
-  generateSeedActivities,
 } from './lib/storage';
 import { testConnection } from './lib/firebase';
 import { Header } from './components/Header';
@@ -129,27 +126,36 @@ export default function App() {
 
   // Initialize and subscribe to Firestore collections
   useEffect(() => {
-    // Check initial seed
+    // Purge any old dummy seed records stored in browser localStorage
+    ['feedings', 'diapers', 'sleeps', 'inventory', 'medical'].forEach((col) => {
+      const key = `${col}_${family.id}`;
+      const items = getLocal<any[]>(key, []);
+      const cleaned = items.filter(
+        (i) =>
+          !i.id?.includes('-seed-') &&
+          !i.id?.startsWith('item-diapers-') &&
+          !i.id?.startsWith('item-formula-') &&
+          !i.id?.startsWith('item-wipes') &&
+          !i.id?.startsWith('item-cream') &&
+          !i.id?.startsWith('item-vitamind') &&
+          !i.id?.startsWith('vac-') &&
+          !i.id?.startsWith('growth-') &&
+          !i.id?.startsWith('med-checkup-')
+      );
+      if (cleaned.length !== items.length) {
+        setLocal(key, cleaned);
+      }
+    });
+
     const cachedFeedings = getLocal<FeedingRecord[]>(`feedings_${family.id}`, []);
     const cachedDiapers = getLocal<DiaperRecord[]>(`diapers_${family.id}`, []);
     const cachedSleeps = getLocal<SleepRecord[]>(`sleeps_${family.id}`, []);
-    const cachedInventory = getLocal<InventoryItem[]>(`inventory_${family.id}`, INITIAL_INVENTORY);
-    const cachedMedical = getLocal<MedicalRecord[]>(`medical_${family.id}`, INITIAL_VACCINES);
+    const cachedInventory = getLocal<InventoryItem[]>(`inventory_${family.id}`, []);
+    const cachedMedical = getLocal<MedicalRecord[]>(`medical_${family.id}`, []);
 
-    if (cachedFeedings.length === 0) {
-      const seeds = generateSeedActivities(family.id);
-      setFeedings(seeds.feedings);
-      setDiapers(seeds.diapers);
-      setSleeps(seeds.sleeps);
-      setLocal(`feedings_${family.id}`, seeds.feedings);
-      setLocal(`diapers_${family.id}`, seeds.diapers);
-      setLocal(`sleeps_${family.id}`, seeds.sleeps);
-    } else {
-      setFeedings(cachedFeedings);
-      setDiapers(cachedDiapers);
-      setSleeps(cachedSleeps);
-    }
-
+    setFeedings(cachedFeedings);
+    setDiapers(cachedDiapers);
+    setSleeps(cachedSleeps);
     setInventory(cachedInventory);
     setMedical(cachedMedical);
 

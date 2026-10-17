@@ -154,8 +154,31 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
       </div>
 
       {/* Supplies Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-        {inventory.map((item) => {
+      {inventory.length === 0 ? (
+        <div className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-4 shadow-sm">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+            <Package size={28} />
+          </div>
+          <div>
+            <h4 className="font-bold text-base text-slate-800 dark:text-slate-100">
+              Inventario vacío (0 artículos)
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1 leading-relaxed">
+              Registra los productos que compraste para Evan (pañales, latas de fórmula, toallitas) y la app llevará la cuenta exacta y te dirá cuándo volver a comprar.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleOpenAdd}
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/30 transition-all cursor-pointer inline-flex items-center gap-2"
+          >
+            <Plus size={16} />
+            <span>Agregar Primer Producto</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {inventory.map((item) => {
           const proj = projections.find((p) => p.itemId === item.id);
           const isCritical = item.currentQuantity <= item.criticalThreshold;
           const isLow = !isCritical && item.currentQuantity <= item.minThreshold;
@@ -291,7 +314,8 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
 
       {/* Projections & Smart Shopping Assistant */}
       <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-950 via-slate-900 to-indigo-950 text-white border border-blue-500/40 shadow-xl space-y-4">
